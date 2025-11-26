@@ -1,10 +1,13 @@
-# ContosoDashboard Application
+# ContosoDashboard-SSD
 
-A comprehensive internal web application for Contoso Corporation employees to manage tasks, projects, and team collaboration.
+The ContosoDashboard application is used FOR TRAINING PURPOSES ONLY.
+
+This code project is used as the starter project for training that teaches Spec-Driven Development (SDD) using the GitHub Spec Kit. This codebase is NOT intended for use in production environments. This codebase is NOT intended as a model for production applications.
 
 ## Overview
 
 ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides a centralized platform for:
+
 - Task management and tracking
 - Project oversight and collaboration
 - Team coordination
@@ -46,37 +49,43 @@ ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides
 ### Installation
 
 1. **Clone or navigate to the project directory**:
+
    ```powershell
    cd ContosoDashboard
    ```
 
 2. **Update the database connection string** in `appsettings.json`:
-   ```json
-   "ConnectionStrings": {
-     "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=ContosoDashboard;Trusted_Connection=True;MultipleActiveResultSets=true"
-   }
-   ```
+
+    ```json
+    "ConnectionStrings": {
+       "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=ContosoDashboard;Trusted_Connection=True;MultipleActiveResultSets=true"
+    }
+    ```
 
 3. **Restore NuGet packages**:
-   ```powershell
-   dotnet restore
-   ```
+
+    ```powershell
+    dotnet restore
+    ```
 
 4. **Run the application**:
+
    ```powershell
    dotnet run
    ```
 
 5. **Open your browser** and navigate to:
-   ```
-   http://localhost:5000
-   ```
-   
+
+    ```plaintext
+    http://localhost:5000
+    ```
+
    Note: The application runs on HTTP in Development mode for easier local testing.
 
 ### Database Setup
 
 The application automatically creates and seeds the database on first run with:
+
 - 4 sample users (Admin, Project Manager, Team Lead, Employee)
 - 1 sample project
 - 3 sample tasks
@@ -85,7 +94,7 @@ The application automatically creates and seeds the database on first run with:
 
 ## Project Structure
 
-```
+```plaintext
 ContosoDashboard/
 ├── Data/
 │   └── ApplicationDbContext.cs      # EF Core database context
@@ -129,6 +138,7 @@ ContosoDashboard/
 To enable Microsoft Entra ID authentication:
 
 1. Update `appsettings.json` with your Azure AD details:
+
    ```json
    "AzureAd": {
      "Instance": "https://login.microsoftonline.com/",
@@ -140,6 +150,7 @@ To enable Microsoft Entra ID authentication:
    ```
 
 2. Uncomment authentication configuration in `Program.cs`:
+
    ```csharp
    builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
        .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
@@ -151,6 +162,7 @@ To enable Microsoft Entra ID authentication:
 ### User Roles
 
 The application supports four role levels:
+
 - **Employee**: Standard user access
 - **TeamLead**: Can view team member activities
 - **ProjectManager**: Can create projects and assign tasks
@@ -161,35 +173,41 @@ The application supports four role levels:
 The application includes pre-seeded data for testing:
 
 **Users**:
-- admin@contoso.com (Administrator)
-- camille.nicole@contoso.com (Project Manager) - Camille Nicole
-- floris.kregel@contoso.com (Team Lead) - Floris Kregel
-- ni.kang@contoso.com (Software Engineer) - Ni Kang - *Default demo user (UserId: 4)*
+
+- <admin@contoso.com> (Administrator)
+- <camille.nicole@contoso.com> (Project Manager) - Camille Nicole
+- <floris.kregel@contoso.com> (Team Lead) - Floris Kregel
+- <ni.kang@contoso.com> (Software Engineer) - Ni Kang - *Default demo user (UserId: 4)*
 
 **Project**:
+
 - "ContosoDashboard Development" with 3 tasks
 
 ## Key Functionalities
 
 ### Dashboard (Home Page)
+
 - Summary cards with real-time metrics
 - Active announcements display
 - Quick action links
 - Recent notifications feed
 
 ### Task Management
+
 - Filter by status, priority, and project
 - Quick status updates via dropdown
 - Priority-based color coding
 - Overdue task highlighting
 
 ### Project Management
+
 - Project cards with progress bars
 - Completion percentage calculation
 - Team member visibility
 - Status badges
 
 ### User Profile
+
 - Profile information editing
 - Availability status management
 - Notification preferences
@@ -198,18 +216,20 @@ The application includes pre-seeded data for testing:
 ## Future Enhancements
 
 Based on the specification, the following features can be added:
+
+- Upload and manage document files for tasks and projects
 - Real-time notifications with SignalR
 - Task comment display and editing UI
 - Project timeline/Gantt chart view
 - Advanced search functionality
 - Reports and analytics dashboard
 - Email notification integration
-- File attachments for tasks
 - Drag-and-drop task prioritization
 
 ## Compliance & Security
 
 The application architecture supports:
+
 - Role-based access control (RBAC)
 - WCAG 2.1 Level AA accessibility standards
 - TLS encryption for data transmission
@@ -226,11 +246,3 @@ The application architecture supports:
 ## Contributing
 
 This application was built according to the ContosoDashboard Application Specification v1.0.
-
-## License
-
-Internal use only - Contoso Corporation
-
-## Support
-
-For issues or questions, contact the development team.
