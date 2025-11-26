@@ -110,7 +110,7 @@ ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides
    dotnet run
    ```
 
-3. **Open your browser** to the URL shown in the terminal (typically `https://localhost:7xxx`)
+3. **Open your browser** to `http://localhost:5000`
 
 4. **Login** - Select any user from the dropdown (no password required)
 
