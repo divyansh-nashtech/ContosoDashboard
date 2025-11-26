@@ -8,7 +8,46 @@ The ContosoDashboard-SSD repository contains the starter code project for traini
 - The project architecture is NOT intended as a model for production applications.
 - The project is NOT actively maintained and may contain bugs or security vulnerabilities.
 - The project is provided "as-is" without warranties or support of any kind.
-- The project does attempt to follow basic security best practices, but should NOT be relied upon for secure application development.
+- **The project implements mock authentication and authorization for training purposes**
+
+## 🔒 Security Features (Training Implementation)
+
+This application includes a **mock authentication system** designed for training without external dependencies:
+
+- ✅ Cookie-based authentication (8-hour sliding expiration)
+- ✅ Claims-based identity with user roles
+- ✅ Razor Pages for login/logout (proper HTTP request handling)
+- ✅ Custom authentication state provider for Blazor Server integration
+- ✅ Authorization enforcement on all protected pages (`[Authorize]` attribute)
+- ✅ Role-based access control (RBAC) with hierarchical permissions
+- ✅ Service-level security to prevent unauthorized data access
+- ✅ IDOR (Insecure Direct Object Reference) protection
+- ✅ Defense in depth (middleware, page attributes, service checks)
+- ✅ Security headers (CSP, X-Frame-Options, X-XSS-Protection, etc.)
+- ✅ Cookie security with sliding expiration
+- ✅ User isolation - each user sees only their authorized data
+- ✅ No external services required (suitable for offline training)
+
+**Note**: The mock authentication is suitable for training only. Production deployments require proper identity providers with password hashing, MFA, OAuth 2.0/OpenID Connect, and compliance with security standards (WCAG 2.1, TLS encryption, audit logging).
+
+### Mock Login System
+
+**Available Users** (no password required - select from dropdown):
+
+| Display Name | Email | Role | Department |
+|-------------|-------|------|------------|
+| System Administrator | `admin@contoso.com` | Administrator | IT |
+| Camille Nicole | `camille.nicole@contoso.com` | Project Manager | Engineering |
+| Floris Kregel | `floris.kregel@contoso.com` | Team Lead | Engineering |
+| Ni Kang | `ni.kang@contoso.com` | Employee | Engineering |
+
+**Login Process:**
+
+1. Navigate to `/login` (automatic redirect if not authenticated)
+2. Select a user from the dropdown
+3. Click "Login" - you'll be redirected to the dashboard as that user
+
+⚠️ **Important:** This mock authentication system is for **training only**. Production applications should use Azure AD, Identity Server, Auth0, or similar identity providers with proper password hashing, MFA, and OAuth 2.0/OpenID Connect.
 
 ## Overview
 
@@ -24,6 +63,8 @@ ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides
 
 ### ✅ Implemented Features
 
+- **Mock Authentication System**: User selection login, cookie-based auth, claims-based identity
+- **Authorization Enforcement**: `[Authorize]` attributes on all protected pages, role-based policies
 - **Dashboard Home Page**: Personalized dashboard with summary cards showing active tasks, due dates, projects, and notifications
 - **Task Management**: View, filter, sort, and update tasks with priority levels and status tracking
 - **Project Management**: Browse projects with completion percentages, team members, and status indicators
@@ -31,6 +72,7 @@ ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides
 - **Team Directory**: Browse team members by department with status, roles, and contact information
 - **Notifications Center**: View and manage all notifications with read/unread status and priority badges
 - **User Profile**: Update personal information, availability status, and notification preferences
+- **Service-Level Security**: Authorization checks prevent IDOR vulnerabilities
 - **Data Models**: Complete entity framework models for Users, Tasks, Projects, Notifications, and Announcements
 - **Business Services**: Service layer for all core functionality (Tasks, Projects, Users, Notifications, Dashboard)
 - **Database Context**: EF Core DbContext with relationships, indexes, and seed data
@@ -40,9 +82,11 @@ ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides
 - **Framework**: ASP.NET Core 8.0
 - **UI**: Blazor Server
 - **Database**: SQL Server with Entity Framework Core
-- **Authentication**: Microsoft Identity (Microsoft Entra ID integration ready)
+- **Authentication**: Cookie-based mock authentication for training (Azure AD/Microsoft Entra ID ready)
+- **Authorization**: Claims-based identity with role-based access control
 - **Styling**: Bootstrap 5.3 with Bootstrap Icons
 - **Architecture**: Clean separation of concerns with Models, Services, Data, and Pages layers
+- **Security**: IDOR protection, service-level authorization, `[Authorize]` attributes
 
 ## Getting Started
 
@@ -52,51 +96,54 @@ ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides
 - SQL Server or SQL Server LocalDB
 - Visual Studio 2022 or Visual Studio Code
 
-### Installation
+### Quick Start
 
-1. **Clone or navigate to the project directory**:
+1. **Navigate to the project directory**:
 
    ```powershell
    cd ContosoDashboard
    ```
 
-2. **Update the database connection string** in `appsettings.json`:
-
-    ```json
-    "ConnectionStrings": {
-       "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=ContosoDashboard;Trusted_Connection=True;MultipleActiveResultSets=true"
-    }
-    ```
-
-3. **Restore NuGet packages**:
-
-    ```powershell
-    dotnet restore
-    ```
-
-4. **Run the application**:
+2. **Run the application** (database will be created automatically):
 
    ```powershell
    dotnet run
    ```
 
-5. **Open your browser** and navigate to:
+3. **Open your browser** to the URL shown in the terminal (typically `https://localhost:7xxx`)
 
-    ```plaintext
-    http://localhost:5000
-    ```
+4. **Login** - Select any user from the dropdown (no password required)
 
-   Note: The application runs on HTTP in Development mode for easier local testing.
+The application automatically creates and seeds the database on first run with sample users, projects, tasks, and announcements.
 
-### Database Setup
+### Testing Security Features
 
-The application automatically creates and seeds the database on first run with:
+#### Test 1: Authentication Required
 
-- 4 sample users (Admin, Project Manager, Team Lead, Employee)
-- 1 sample project
-- 3 sample tasks
-- Project member assignments
-- A welcome announcement
+- Open browser in incognito mode
+- Try to navigate to `https://localhost:xxxx/tasks`
+- Expected: Redirect to `/login`
+
+#### Test 2: User Isolation
+
+- Login as "Ni Kang"
+- Note the tasks and projects shown
+- Logout and login as "Floris Kregel"
+- Expected: Different tasks and projects displayed
+
+#### Test 3: IDOR Protection
+
+- Login as "Ni Kang" and view a project (note the ID in URL)
+- Logout and login as "System Administrator"
+- Try to access the same project by URL
+- Expected: Access only if you're a member
+
+#### Test 4: Role-Based Features
+
+- Login as different users to see varying levels of access
+- Employee: View assigned tasks, update status
+- Project Manager: Manage projects, assign tasks
+- Administrator: Full system access
 
 ## Project Structure
 
@@ -117,16 +164,19 @@ ContosoDashboard/
 │   ├── ITaskService.cs / TaskService.cs
 │   ├── IProjectService.cs / ProjectService.cs
 │   ├── INotificationService.cs / NotificationService.cs
-│   └── IDashboardService.cs / DashboardService.cs
+│   ├── IDashboardService.cs / DashboardService.cs
+│   └── CustomAuthenticationStateProvider.cs  # Blazor Server auth integration
 ├── Pages/
 │   ├── Index.razor                  # Dashboard home page
+│   ├── Login.cshtml / Login.cshtml.cs  # Mock authentication login (Razor Page)
+│   ├── Logout.cshtml / Logout.cshtml.cs  # Logout handler (Razor Page)
 │   ├── Tasks.razor                  # Task list and management
 │   ├── Projects.razor               # Project list view
 │   ├── ProjectDetails.razor         # Individual project details
 │   ├── Team.razor                   # Team member directory
 │   ├── Notifications.razor          # Notification center
 │   ├── Profile.razor                # User profile page
-│   └── _Host.cshtml                 # Blazor host page
+│   └── _Host.cshtml                 # Blazor Server host page
 ├── Shared/
 │   ├── MainLayout.razor             # Main layout template
 │   └── NavMenu.razor                # Navigation sidebar
@@ -139,55 +189,70 @@ ContosoDashboard/
 
 ## Configuration
 
-### Authentication Setup (Optional)
+### Database Connection
 
-To enable Microsoft Entra ID authentication:
+The default connection string in `appsettings.json` uses SQL Server LocalDB:
 
-1. Update `appsettings.json` with your Azure AD details:
+```json
+"ConnectionStrings": {
+  "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=ContosoDashboard;Trusted_Connection=True;MultipleActiveResultSets=true"
+}
+```
 
-   ```json
-   "AzureAd": {
-     "Instance": "https://login.microsoftonline.com/",
-     "Domain": "yourdomain.onmicrosoft.com",
-     "TenantId": "your-tenant-id",
-     "ClientId": "your-client-id",
-     "CallbackPath": "/signin-oidc"
-   }
-   ```
+Update this if using a different SQL Server instance.
 
-2. Uncomment authentication configuration in `Program.cs`:
+### Production Authentication Guidance
 
-   ```csharp
-   builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-       .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
-   
-   // Later in the pipeline:
-   app.UseAuthentication();
-   ```
+This training application uses mock authentication. For production applications, you would need to:
+
+- Implement proper identity providers (Azure AD, Identity Server, Auth0)
+- Add password hashing and salting (e.g., bcrypt, PBKDF2)
+- Enable multi-factor authentication (MFA)
+- Implement OAuth 2.0/OpenID Connect protocols
+- Add rate limiting and account lockout policies
+- Implement comprehensive audit logging
+- Use secure session management with idle timeouts
+- Implement password complexity requirements and rotation policies
+
+See [Microsoft's ASP.NET Core Security documentation](https://docs.microsoft.com/aspnet/core/security/) for production implementation guidance.
 
 ### User Roles
 
-The application supports four role levels:
+The application supports four role levels with hierarchical permissions:
 
-- **Employee**: Standard user access
-- **TeamLead**: Can view team member activities
-- **ProjectManager**: Can create projects and assign tasks
-- **Administrator**: Full system access
+- **Employee**: View and update assigned tasks, view projects where member, manage own profile
+- **TeamLead**: All Employee permissions plus view team member activities
+- **ProjectManager**: All TeamLead permissions plus create/manage projects, assign tasks
+- **Administrator**: Full system access including all administrative functions
 
 ## Sample Data
 
 The application includes pre-seeded data for testing:
 
-**Users**:
+**Users** (all available for mock login):
 
-- <admin@contoso.com> (Administrator)
-- <camille.nicole@contoso.com> (Project Manager) - Camille Nicole
-- <floris.kregel@contoso.com> (Team Lead) - Floris Kregel
-- <ni.kang@contoso.com> (Software Engineer) - Ni Kang - *Default demo user (UserId: 4)*
+- `admin@contoso.com` - System Administrator (Administrator role)
+- `camille.nicole@contoso.com` - Camille Nicole (Project Manager role)
+- `floris.kregel@contoso.com` - Floris Kregel (Team Lead role)
+- `ni.kang@contoso.com` - Ni Kang (Employee role)
 
 **Project**:
 
-- "ContosoDashboard Development" with 3 tasks
+- "ContosoDashboard Development" with 3 sample tasks in various states
+
+## Application Pages
+
+| Page | Route | Description | Auth Required |
+|------|-------|-------------|---------------|
+| Login | `/login` | User selection for mock auth | No |
+| Dashboard | `/` | Summary, announcements, quick actions | Yes |
+| Tasks | `/tasks` | View and manage your tasks | Yes |
+| Projects | `/projects` | View your projects | Yes |
+| Project Details | `/projects/{id}` | Detailed project view | Yes (member only) |
+| Team | `/team` | View team members | Yes |
+| Notifications | `/notifications` | Manage notifications | Yes |
+| Profile | `/profile` | Edit your profile | Yes |
+| Logout | `/logout` | End session and clear cookies | Yes |
 
 ## Key Functionalities
 
@@ -219,36 +284,105 @@ The application includes pre-seeded data for testing:
 - Notification preferences
 - Display initials when no photo is set
 
-## Future Enhancements
+## Troubleshooting
 
-Based on the specification, the following features can be added:
+### Can't Login
 
-- Upload and manage document files for tasks and projects
-- Real-time notifications with SignalR
-- Task comment display and editing UI
-- Project timeline/Gantt chart view
-- Advanced search functionality
-- Reports and analytics dashboard
-- Email notification integration
-- Drag-and-drop task prioritization
+- Ensure database is created (run `dotnet run` to auto-create)
+- Check that seeded users exist in database
+- Clear browser cookies and try again
 
-## Compliance & Security
+### Redirected to Login After Login
 
-The application architecture supports:
+- Check browser cookies are enabled
+- Clear browser cache and cookies
+- Try incognito/private mode
 
-- Role-based access control (RBAC)
-- WCAG 2.1 Level AA accessibility standards
-- TLS encryption for data transmission
-- Secure authentication via Microsoft Entra ID
-- Audit logging capabilities
+### Can't Access a Page
 
-## Performance Considerations
+- Verify you're logged in (user name shown in top-right)
+- Check if your role has permission for that resource
+- Verify you're a member of the project/task you're trying to access
 
-- Database indexes on frequently queried fields
-- Eager loading with Include() to prevent N+1 queries
-- Async/await pattern throughout for scalability
-- Optimized for 1,000+ concurrent users (as per spec)
+### Database Issues
 
-## Contributing
+**Option 1: Recreate via LocalDB**
 
-This application was built according to the ContosoDashboard Application Specification v1.0.
+```powershell
+sqllocaldb stop mssqllocaldb
+sqllocaldb delete mssqllocaldb
+# Then run the application - database will be recreated automatically
+```
+
+**Option 2: Using EF Tools**
+
+- Delete database: `dotnet ef database drop --force`
+- Recreate: Run application (auto-creates with seed data)
+
+**Note**: The application uses `EnsureCreated()` for development, so just running `dotnet run` will automatically create and seed the database if it doesn't exist.
+
+## Learning Objectives
+
+This training application teaches:
+
+1. **Authentication Patterns** - How to implement and configure authentication
+2. **Authorization Enforcement** - Using attributes and policies
+3. **Claims-Based Identity** - Working with user claims
+4. **IDOR Prevention** - Service-level authorization checks
+5. **Security Best Practices** - Defense in depth, least privilege
+6. **ASP.NET Core Security** - Industry-standard patterns and middleware
+
+## Using This Application for Training
+
+### For Instructors
+
+This application is designed to teach Spec-Driven Development and security best practices:
+
+- Students can explore a working authentication system without cloud dependencies
+- All security features are self-contained and can run offline
+- Each user has different permissions to demonstrate RBAC in action
+- Code includes authorization patterns students can examine and modify
+- Database automatically seeds with test data for immediate hands-on practice
+
+### For Students
+
+Recommended learning path:
+
+1. **Explore the UI**: Login as different users to see role-based access control
+2. **Review the code**: Examine the `Services/` folder for authorization patterns
+3. **Test security**: Execute the security test scenarios in this README
+4. **Understand patterns**: Study how `[Authorize]` attributes work with service-level checks
+5. **Experiment**: Try modifying authorization rules to understand the security model
+6. **Break things**: Intentionally remove security checks to see what vulnerabilities emerge
+
+### Discussion Topics
+
+- Why is service-level authorization necessary in addition to page-level authorization?
+- How does claims-based identity differ from session-based authentication?
+- What are the security implications of the mock authentication system?
+- How would you modify this application to use a real identity provider?
+
+## Known Limitations (Training Context)
+
+This is a **training application**, not production code. Known limitations include:
+
+- **Mock authentication**: No real passwords - anyone can select any user account
+- **No rate limiting**: Vulnerable to brute force attacks and denial of service
+- **No audit logging**: Security events (login, failed auth, data changes) are not logged
+- **Simplified input validation**: Production apps need more comprehensive validation
+- **No session timeout warnings**: Users aren't warned before session expiration
+- **CSP includes unsafe directives**: `'unsafe-inline'` and `'unsafe-eval'` required for Blazor Server but not ideal for security
+- **No email verification**: User emails are not validated
+- **No account lockout**: Failed login attempts don't trigger account locks
+
+These limitations are **intentional** for training purposes to keep the application simple and self-contained. Production applications must address all of these security concerns.
+
+## Code Quality Features
+
+The application demonstrates good coding practices:
+
+- Database indexes on frequently queried fields for performance
+- Async/await pattern throughout for non-blocking operations
+- Entity Framework Core with eager loading (`.Include()`) to prevent N+1 query problems
+- Clean separation of concerns (Models, Services, Data, Pages)
+- Dependency injection for loose coupling and testability
