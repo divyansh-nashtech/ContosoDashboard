@@ -321,9 +321,9 @@ sqllocaldb delete mssqllocaldb
 
 **Note**: The application uses `EnsureCreated()` for development, so just running `dotnet run` will automatically create and seed the database if it doesn't exist.
 
-## Learning Objectives
+## Security Concepts and Patterns
 
-This training application teaches:
+This training application demonstrates the following security concepts and patterns:
 
 1. **Authentication Patterns** - How to implement and configure authentication
 2. **Authorization Enforcement** - Using attributes and policies
@@ -331,36 +331,6 @@ This training application teaches:
 4. **IDOR Prevention** - Service-level authorization checks
 5. **Security Best Practices** - Defense in depth, least privilege
 6. **ASP.NET Core Security** - Industry-standard patterns and middleware
-
-## Using This Application for Training
-
-### For Instructors
-
-This application is designed to teach Spec-Driven Development and security best practices:
-
-- Students can explore a working authentication system without cloud dependencies
-- All security features are self-contained and can run offline
-- Each user has different permissions to demonstrate RBAC in action
-- Code includes authorization patterns students can examine and modify
-- Database automatically seeds with test data for immediate hands-on practice
-
-### For Students
-
-Recommended learning path:
-
-1. **Explore the UI**: Login as different users to see role-based access control
-2. **Review the code**: Examine the `Services/` folder for authorization patterns
-3. **Test security**: Execute the security test scenarios in this README
-4. **Understand patterns**: Study how `[Authorize]` attributes work with service-level checks
-5. **Experiment**: Try modifying authorization rules to understand the security model
-6. **Break things**: Intentionally remove security checks to see what vulnerabilities emerge
-
-### Discussion Topics
-
-- Why is service-level authorization necessary in addition to page-level authorization?
-- How does claims-based identity differ from session-based authentication?
-- What are the security implications of the mock authentication system?
-- How would you modify this application to use a real identity provider?
 
 ## Known Limitations (Training Context)
 
