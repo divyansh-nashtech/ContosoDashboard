@@ -56,6 +56,14 @@ All Contoso employees who use the ContosoDashboard application will have access 
 - System must reject unsupported file types
 - Uploaded files must be stored securely with encryption at rest
 
+**Implementation Notes for Azure Blob Storage**
+
+- Blob path generation must create unique paths BEFORE database insertion to prevent duplicate key violations
+- Recommended pattern: `{userId}/{projectId or "personal"}/{uniqueId}.{extension}` where uniqueId is a GUID
+- Upload sequence: Generate unique blob path → Upload to blob storage → Save metadata to database
+- This prevents orphaned database records if blob upload fails
+- This prevents duplicate key errors from empty or non-unique blob paths
+
 ### 2. Document Organization and Browsing
 
 **My Documents View**
@@ -158,6 +166,49 @@ The feature will be considered successful if, within 3 months of launch:
 - Must work within current application architecture (no major rewrites)
 - Must comply with existing security policies and authentication mechanisms (Microsoft Entra ID)
 - Development timeline: Feature should be production-ready within 8-10 weeks
+
+### Blazor-Specific Implementation Requirements
+
+**File Upload Component State Management**
+
+- Use `@key` attribute on `InputFile` component to force re-render after successful upload
+- Extract file metadata (name, size, contentType) into local variables BEFORE opening stream
+- Copy `IBrowserFile` stream to `MemoryStream` immediately to prevent disposal issues
+- Clear `IBrowserFile` reference (set to null) after copying stream to prevent reuse errors
+- Example pattern:
+  ```csharp
+  var fileName = SelectedFile.Name;
+  var fileSize = SelectedFile.Size;
+  var contentType = SelectedFile.ContentType;
+  
+  using var memoryStream = new MemoryStream();
+  using (var fileStream = SelectedFile.OpenReadStream(maxFileSize))
+  {
+      await fileStream.CopyToAsync(memoryStream);
+  }
+  memoryStream.Position = 0;
+  
+  SelectedFile = null; // Clear reference to prevent reuse
+  StateHasChanged();
+  ```
+
+**Authentication Claims**
+
+- Ensure Login flow includes ALL required claims: NameIdentifier, Name, Email, Role, Department
+- Department claim is required for team-based authorization in document sharing
+- Missing claims will cause authorization failures in DocumentService methods
+
+### Database Setup Requirements
+
+**Clean State for Testing**
+
+- Before testing document upload for the first time, ensure clean database state
+- If previous upload attempts failed, drop and recreate database to remove orphaned records:
+  ```powershell
+  dotnet ef database drop --force
+  dotnet ef database update
+  ```
+- Orphaned records with empty BlobPath values will cause duplicate key violations
 
 ## Assumptions
 
