@@ -8,7 +8,9 @@ The ContosoDashboard repository contains the starter code project for training t
 - The project architecture is NOT intended as a model for production applications.
 - The project is NOT actively maintained and may contain bugs or security vulnerabilities.
 - The project is provided "as-is" without warranties or support of any kind.
-- **The project implements mock authentication and authorization for training purposes**
+- The project implements mock authentication and authorization for training purposes only.
+- The project does NOT implement cloud integration or external service dependencies (local only and offline to maximize training availability).
+- The project demonstrates good coding practices, simplified for a training context, with known and documented limitations.
 
 ## 🔒 Security Features (Training Implementation)
 
@@ -81,7 +83,7 @@ ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides
 
 - **Framework**: ASP.NET Core 8.0
 - **UI**: Blazor Server
-- **Database**: SQL Server with Entity Framework Core
+- **Database**: SQL Server LocalDB with Entity Framework Core
 - **Authentication**: Cookie-based mock authentication for training (Azure AD/Microsoft Entra ID ready)
 - **Authorization**: Claims-based identity with role-based access control
 - **Styling**: Bootstrap 5.3 with Bootstrap Icons
@@ -93,7 +95,7 @@ ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides
 ### Prerequisites
 
 - .NET 8.0 SDK or later
-- SQL Server or SQL Server LocalDB
+- SQL Server LocalDB
 - Visual Studio 2022 or Visual Studio Code
 
 ### Quick Start
