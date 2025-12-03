@@ -90,6 +90,47 @@ ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides
 - **Architecture**: Clean separation of concerns with Models, Services, Data, and Pages layers
 - **Security**: IDOR protection, service-level authorization, `[Authorize]` attributes
 
+## Architecture Principles
+
+### Offline-First with Cloud Migration Path
+
+This training application follows an **offline-first architecture** with abstraction layers that enable seamless migration to Azure services:
+
+**Current Implementation (Training/Offline):**
+- **Database**: SQL Server LocalDB (offline development database)
+- **File Storage**: Local filesystem for any file-based features
+- **Authentication**: Cookie-based mock authentication
+
+**Production Migration Path:**
+- **Database**: Azure SQL Database (replace connection string, no code changes)
+- **File Storage**: Azure Blob Storage (swap `IFileStorageService` implementation)
+- **Authentication**: Microsoft Entra ID (replace authentication middleware)
+
+**Key Design Pattern - Infrastructure Abstraction:**
+
+All infrastructure dependencies use **interface abstractions** to enable switching between local and cloud implementations:
+
+```csharp
+// Example: File storage abstraction
+public interface IFileStorageService
+{
+    Task<string> UploadAsync(Stream fileStream, string fileName, string contentType);
+    Task DeleteAsync(string filePath);
+    Task<Stream> DownloadAsync(string filePath);
+}
+
+// Training: LocalFileStorageService (uses System.IO)
+// Production: AzureBlobStorageService (uses Azure SDK)
+// Swap via dependency injection - no business logic changes required
+```
+
+**Benefits of This Approach:**
+- Students learn proper abstraction patterns and dependency injection
+- Training works offline without Azure subscriptions or cloud costs
+- Migration to production requires only configuration and implementation swaps
+- Business logic remains unchanged during cloud migration
+- Demonstrates industry-standard separation of concerns
+
 ## Getting Started
 
 ### Prerequisites

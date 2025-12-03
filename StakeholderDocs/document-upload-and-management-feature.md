@@ -54,15 +54,32 @@ All Contoso employees who use the ContosoDashboard application will have access 
 - System must scan uploaded files for viruses and malware before storage
 - System must reject files that exceed size limits with clear error messages
 - System must reject unsupported file types
-- Uploaded files must be stored securely with encryption at rest
+- Uploaded files must be stored securely with appropriate access controls
 
-**Implementation Notes for Azure Blob Storage**
+**Implementation Notes for Local File Storage**
 
-- Blob path generation must create unique paths BEFORE database insertion to prevent duplicate key violations
+**Offline Storage Pattern:**
+- Store files in a dedicated directory outside `wwwroot` for security (e.g., `AppData/uploads`)
+- Generate unique file paths BEFORE database insertion to prevent duplicate key violations
 - Recommended pattern: `{userId}/{projectId or "personal"}/{uniqueId}.{extension}` where uniqueId is a GUID
-- Upload sequence: Generate unique blob path → Upload to blob storage → Save metadata to database
-- This prevents orphaned database records if blob upload fails
-- This prevents duplicate key errors from empty or non-unique blob paths
+- Upload sequence: Generate unique path → Save file to disk → Save metadata to database
+- This prevents orphaned database records if file save fails
+- This prevents duplicate key errors from empty or non-unique file paths
+
+**Security Considerations:**
+- Files stored outside `wwwroot` require controller endpoints to serve them (enables authorization checks)
+- Validate file extensions against whitelist before saving
+- Use GUID-based filenames to prevent path traversal attacks
+- Never use user-supplied filenames directly in file paths
+- Implement authorization checks in download endpoint to prevent unauthorized access
+
+**Azure Migration Design:**
+- Create `IFileStorageService` interface with methods: `UploadAsync()`, `DeleteAsync()`, `DownloadAsync()`, `GetUrlAsync()`
+- Local implementation (`LocalFileStorageService`) uses `System.IO.File` operations
+- Future `AzureBlobStorageService` implementation will use Azure.Storage.Blobs SDK
+- Same path pattern works for Azure blob names: `{userId}/{projectId}/{guid}.{ext}`
+- Swap implementations via dependency injection configuration
+- No changes to business logic, UI, or database schema required for migration
 
 ### 2. Document Organization and Browsing
 
@@ -162,10 +179,45 @@ The feature will be considered successful if, within 3 months of launch:
 
 ## Technical Constraints
 
-- Must integrate with existing Azure infrastructure (Azure Blob Storage for file storage)
+- Must work **offline without cloud services** for training purposes
+- Must use **local filesystem storage** for uploaded documents
+- Must implement **interface abstractions** (`IFileStorageService`) for future cloud migration
 - Must work within current application architecture (no major rewrites)
-- Must comply with existing security policies and authentication mechanisms (Microsoft Entra ID)
+- Must comply with existing mock authentication system
 - Development timeline: Feature should be production-ready within 8-10 weeks
+
+### Cloud Migration Readiness
+
+While this feature must work offline for training, it should be designed for easy migration to Azure services:
+
+**Offline Implementation Requirements:**
+- Store files in local directory structure (e.g., `AppData/uploads/{userId}/{projectId}/{guid}.ext`)
+- Implement `LocalFileStorageService : IFileStorageService` using `System.IO` operations
+- File paths stored in database should be relative and portable
+- No Azure SDK dependencies in training implementation
+
+**Azure Migration Design Pattern:**
+
+```csharp
+// Interface abstraction (implement in training version)
+public interface IFileStorageService
+{
+    Task<string> UploadAsync(Stream fileStream, string fileName, string contentType);
+    Task DeleteAsync(string filePath);
+    Task<Stream> DownloadAsync(string filePath);
+    Task<string> GetUrlAsync(string filePath, TimeSpan expiration);
+}
+
+// Training: LocalFileStorageService implementation
+// Production: AzureBlobStorageService implementation
+// Switch via appsettings.json and dependency injection
+```
+
+**Migration Benefits:**
+- Swap service implementation without changing controllers, pages, or business logic
+- Database schema remains unchanged (FilePath column works for both local paths and blob names)
+- Configuration-driven deployment (dev = local, production = Azure)
+- Students learn industry-standard abstraction patterns
 
 ### Blazor-Specific Implementation Requirements
 
@@ -200,22 +252,26 @@ The feature will be considered successful if, within 3 months of launch:
 
 ### Database Setup Requirements
 
-**Clean State for Testing**
+**Clean State for Testing:**
 
 - Before testing document upload for the first time, ensure clean database state
 - If previous upload attempts failed, drop and recreate database to remove orphaned records:
   ```powershell
-  dotnet ef database drop --force
-  dotnet ef database update
+  sqllocaldb stop mssqllocaldb
+  sqllocaldb delete mssqllocaldb
+  # Database will be recreated automatically on next run
   ```
-- Orphaned records with empty BlobPath values will cause duplicate key violations
+- Orphaned records with empty FilePath values will cause duplicate key violations
+- For LocalDB: `dotnet ef database drop --force` also works if EF tools are installed
 
 ## Assumptions
 
-- Users have reliable internet connections for file uploads/downloads
+- Training environment has local disk storage available
 - Most documents will be under 10 MB in size
 - Users are familiar with basic file management concepts
-- Azure Blob Storage is approved and available for use
+- Local filesystem storage is acceptable for training purposes
+- Cloud migration to Azure Blob Storage is planned for production deployment
+- Users may work offline (no internet connection required for core functionality)
 
 ## Out of Scope
 
