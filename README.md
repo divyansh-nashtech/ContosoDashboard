@@ -131,6 +131,8 @@ public interface IFileStorageService
 - Business logic remains unchanged during cloud migration
 - Demonstrates industry-standard separation of concerns
 
+**File upload best practice:** When implementing file uploads, generate unique file paths (using GUID) before database insertion to prevent duplicate key violations and orphaned records.
+
 ## Getting Started
 
 ### Prerequisites

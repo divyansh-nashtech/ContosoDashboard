@@ -47,7 +47,7 @@ All Contoso employees who use the ContosoDashboard application will have access 
   - Upload date and time
   - Uploaded by (user name)
   - File size
-  - File type
+  - File type (MIME type, e.g., "application/pdf" - field must accommodate 255 characters for Office documents)
 
 **Validation and Security**
 
@@ -62,9 +62,9 @@ All Contoso employees who use the ContosoDashboard application will have access 
 - Store files in a dedicated directory outside `wwwroot` for security (e.g., `AppData/uploads`)
 - Generate unique file paths BEFORE database insertion to prevent duplicate key violations
 - Recommended pattern: `{userId}/{projectId or "personal"}/{uniqueId}.{extension}` where uniqueId is a GUID
-- Upload sequence: Generate unique path → Save file to disk → Save metadata to database
-- This prevents orphaned database records if file save fails
-- This prevents duplicate key errors from empty or non-unique file paths
+- **Upload sequence: Generate unique path → Save file to disk → Save metadata to database**
+- **This prevents orphaned database records if file save fails**
+- **This prevents duplicate key errors from empty or non-unique file paths**
 
 **Security Considerations:**
 - Files stored outside `wwwroot` require controller endpoints to serve them (enables authorization checks)
@@ -185,6 +185,46 @@ The feature will be considered successful if, within 3 months of launch:
 - Must work within current application architecture (no major rewrites)
 - Must comply with existing mock authentication system
 - Development timeline: Feature should be production-ready within 8-10 weeks
+- **Database: DocumentId must be integer (not GUID) for consistency with existing User/Project keys**
+- **Database: Category must store text values (not integer enum) for simplicity**
+
+## Implementation Approach
+
+The document management feature is built using a **layered architecture** that separates concerns and enables future cloud migration:
+
+**Data Layer:**
+- Document entity stores metadata (title, category, filename, file path, upload date, uploader)
+- DocumentId uses integer keys (consistent with existing User and Project tables)
+- Category stores text values ("Project Documents", "Personal Files", etc.) for simplicity
+- FileType field accommodates long MIME types (255 characters for Office documents)
+- FilePath accommodates GUID-based filenames for security (prevents path traversal attacks)
+- DocumentShare entity tracks sharing relationships between users
+
+**Storage Layer:**
+- Files stored outside web-accessible directories (security requirement)
+- IFileStorageService interface abstracts storage implementation
+- LocalFileStorageService for training (uses local filesystem)
+- Future: Swap to AzureBlobStorageService for production (no code changes needed)
+- File organization: `{userId}/{projectId or "personal"}/{guid}.{extension}`
+
+**Business Logic Layer:**
+- DocumentService orchestrates upload workflow:
+  1. Validate file (size limit, extension whitelist)
+  2. Authorize user (project membership if uploading to project)
+  3. Generate unique GUID-based filename
+  4. Save file to disk
+  5. Create database record with file path
+  6. Send notifications to project members
+- Authorization checks prevent unauthorized document access (IDOR protection)
+- Service layer enforces all security rules before data access
+
+**Presentation Layer:**
+- Blazor Server page for document upload and viewing
+- File upload uses MemoryStream pattern (prevents disposal issues in Blazor)
+- Responsive table displays user's documents with metadata
+- Upload modal validates input before submission
+
+This architecture ensures security, maintainability, and cloud-readiness while keeping the training implementation simple and offline-capable.
 
 ### Cloud Migration Readiness
 
