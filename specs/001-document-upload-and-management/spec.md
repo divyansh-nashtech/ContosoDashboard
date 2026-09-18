@@ -2,8 +2,47 @@
 
 **Feature Branch**: `001-document-upload-and-management`  
 **Created**: 2026-09-18  
-**Status**: Draft  
+**Status**: Clarified  
 **Input**: Stakeholder requirements: `StakeholderDocs/document-upload-and-management-feature.md`
+
+## Clarifications
+
+### Session 2026-09-18
+
+- Q: No virus scanning engine is available in the offline training environment. What
+  satisfies the "scan for viruses and malware" requirement? → A: Validation stands in for
+  scanning: the extension must be on the allow list, the declared content type must match
+  the extension, the first bytes of the file must match the signature expected for that
+  type, and the size limit is enforced before the file is written. The scan itself is
+  represented by a content-validation step in the upload pipeline that a real scanning
+  service can be plugged into for production, so no page or service changes are needed
+  later.
+- Q: What happens to documents a user uploaded to a project after that user is removed from
+  the project? → A: The documents stay associated with the project and remain visible to
+  the project's members and manager. The original uploader keeps owner rights (edit,
+  replace, delete) but loses the project-membership route to the project's other documents.
+- Q: What happens to documents associated with a project when the project is deleted? →
+  A: The documents are unlinked from the project rather than deleted. They remain in the
+  uploader's document list as personal documents, and access falls back to uploader,
+  recipients of shares, and administrators.
+- Q: What happens to recipients when the owner deletes a document that has been shared? →
+  A: Deletion is permanent and removes the share records; recipients lose access
+  immediately and receive an in-app notification that the document is no longer available.
+  There is no trash or recovery, consistent with the out-of-scope list.
+- Q: How are file names with special characters, spaces, or path segments handled? →
+  A: The original file name is kept only as display metadata and is sanitized before it is
+  returned in a download header. The stored file always uses a server-generated GUID name,
+  so no user-supplied text ever forms part of a path.
+
+### Session 2026-09-18 (round 2)
+
+- Q: What should happen when storage is full or the upload directory is not writable? →
+  A: The upload fails with a message telling the user to retry later, any partially written
+  file is removed, no metadata record is created, and the failure is logged for
+  administrators.
+- Q: Does "Shared with Me" include documents a user can see through project membership? →
+  A: No. "Shared with Me" lists only documents explicitly shared with the user. Project
+  documents are reached from the project view and from search.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -202,9 +241,19 @@ and confirm both the record and the stored file are gone.
 - **FR-010**: System MUST store uploaded files outside any web-accessible directory, under
   a server-generated name of the form `{userId}/{projectId or "personal"}/{guid}.{ext}`,
   and MUST never use a user-supplied file name as part of the path.
-- **FR-011**: System MUST validate uploaded content for malicious payloads before the file
-  is made available for download. [NEEDS CLARIFICATION: no virus scanning engine is
-  available in the offline training environment — what is the acceptable substitute?]
+- **FR-011**: System MUST validate uploaded content before the file is made available for
+  download, by checking the extension against the allow list, confirming that the declared
+  content type matches the extension, and confirming that the leading bytes of the file
+  match the signature expected for that type; content that fails any check MUST be
+  rejected and MUST NOT be stored.
+- **FR-011a**: The content validation step MUST be replaceable, so that a virus scanning
+  service can be introduced for production without changes to pages, services, or schema.
+- **FR-011b**: System MUST keep the original file name as display metadata only, MUST
+  sanitize it before returning it in a download, and MUST NOT use it to form a storage
+  path.
+- **FR-011c**: When a file cannot be written to storage, System MUST remove any partial
+  file, MUST NOT create a metadata record, MUST report a retry message to the user, and
+  MUST log the failure.
 
 **Browse, search, and access**
 
@@ -232,7 +281,8 @@ and confirm both the record and the stored file are gone.
 - **FR-020**: Document owners MUST be able to share a document with one or more other
   users.
 - **FR-021**: Recipients MUST receive an in-app notification when a document is shared with
-  them, and MUST see the document under "Shared with Me".
+  them, and MUST see the document under "Shared with Me", which lists only documents shared
+  explicitly and not documents reachable through project membership.
 - **FR-022**: System MUST NOT create duplicate share records or repeat notifications when
   the same document is shared with the same user more than once.
 - **FR-023**: Recipients of a shared document MUST be able to view and download it, and
@@ -249,12 +299,15 @@ and confirm both the record and the stored file are gone.
   MUST be able to delete any document associated with their projects; deletion MUST require
   confirmation and MUST permanently remove the metadata record, the stored file, and any
   share records.
-- **FR-027**: System MUST define what happens to a document when its uploader is removed
-  from the associated project. [NEEDS CLARIFICATION: retain, unlink from the project, or
-  transfer ownership to the project manager?]
-- **FR-028**: System MUST define what happens to documents associated with a project when
-  that project is deleted. [NEEDS CLARIFICATION: block deletion, cascade delete documents,
-  or unlink documents?]
+- **FR-027**: When a user is removed from a project, System MUST keep the documents they
+  uploaded to that project associated with the project and visible to its members and
+  manager, while the uploader retains the right to edit, replace, and delete those
+  documents.
+- **FR-028**: When a project is deleted, System MUST unlink its documents from the project
+  rather than delete them; the documents remain in their uploader's list with no associated
+  project.
+- **FR-028a**: When a shared document is deleted, System MUST remove its share records and
+  MUST notify the recipients that the document is no longer available.
 
 **Integration**
 

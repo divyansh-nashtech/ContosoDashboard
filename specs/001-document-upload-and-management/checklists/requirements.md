@@ -25,9 +25,8 @@ before planning begins
 - [x] CHK008 Each functional requirement describes a single observable behavior
 - [x] CHK009 Requirements avoid naming specific classes, frameworks, or file layouts
 - [x] CHK010 Category values are enumerated explicitly
-- [ ] CHK011 No requirement contains an unresolved `[NEEDS CLARIFICATION]` marker —
-      **3 open: FR-011 (malware scanning substitute), FR-027 (uploader removed from
-      project), FR-028 (project deleted)**
+- [x] CHK011 No requirement contains an unresolved `[NEEDS CLARIFICATION]` marker —
+      resolved in the clarification sessions of 2026-09-18 (FR-011, FR-027, FR-028)
 - [x] CHK012 Terms used in requirements ("owner", "project member", "shared with me") are
       used consistently throughout
 
@@ -44,8 +43,8 @@ before planning begins
 
 - [x] CHK018 Partial failure between file storage and database write is addressed
 - [x] CHK019 Duplicate file names and unsafe file names are addressed
-- [ ] CHK020 Lifecycle events on related records (user removed from project, project
-      deleted, shared document deleted) are resolved — **open, see CHK011**
+- [x] CHK020 Lifecycle events on related records (user removed from project, project
+      deleted, shared document deleted) are resolved — see FR-027, FR-028, FR-028a
 - [x] CHK021 Storage failures (unwritable directory, missing file at download) are
       identified
 - [x] CHK022 Empty-state and missing-input behavior is identified
@@ -61,6 +60,7 @@ before planning begins
 
 ## Notes
 
-- Items CHK011 and CHK020 remain open at the end of the specification pass; they are the
-  input to `/speckit.clarify`.
+- CHK011 and CHK020 were open after the specification pass and were closed by the
+  clarification sessions recorded in `spec.md`.
+- All items pass; the specification is ready for planning.
 - Check items off as completed: `[x]`
