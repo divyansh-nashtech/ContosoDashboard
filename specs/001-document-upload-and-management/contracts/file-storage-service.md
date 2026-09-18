@@ -32,7 +32,7 @@ public interface IFileStorageService
 | `UploadAsync` | Writes the stream to `path`, creating intermediate directories. Returns the path that was written. Throws only for genuine storage failures; the caller compensates by deleting and reporting. Does not overwrite an existing path — paths are GUID-based and therefore unique. |
 | `DownloadAsync` | Returns a readable stream positioned at the start, or `null` when nothing is stored at `path`. The caller disposes the stream. |
 | `DeleteAsync` | Removes the stored content. Succeeds silently when the path is already absent, so that deletion stays idempotent. |
-| `GetUrlAsync` | Returns a URL the browser can use for the given path. The local implementation returns the application's own authorized endpoint, `/api/documents/{id}/download`; a cloud implementation returns a time-limited signed URL honoring `expiration`. |
+| `GetUrlAsync` | Returns the address the browser should use for the given path. The local implementation has no directly reachable address and returns the storage path itself, because callers route through the authorized endpoint `/api/documents/{id}/download`; a cloud implementation returns a time-limited signed URL honoring `expiration`. |
 | `ExistsAsync` | Reports whether content is stored at `path`, used by health checks and tests. |
 
 ## Constraints on any implementation

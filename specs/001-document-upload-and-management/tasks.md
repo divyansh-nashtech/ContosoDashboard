@@ -31,70 +31,70 @@ Each increment leaves the application in a working, committable state.
 
 ## Phase 1: Setup (T001 - T004)
 
-- [ ] **T001** Confirm the project builds and runs from a clean checkout: `dotnet restore`,
+- [X] **T001** Confirm the project builds and runs from a clean checkout: `dotnet restore`,
   `dotnet build`, `dotnet run`, sign in as Ni Kang. (Baseline for every later test.)
-- [ ] **T002** Add `DocumentStorage:RootPath` with the value `AppData/uploads` to
+- [X] **T002** Add `DocumentStorage:RootPath` with the value `AppData/uploads` to
   `ContosoDashboard/appsettings.json`. (R1, NFR-006)
-- [ ] **T003** [P] Add `ContosoDashboard/AppData/` to `.gitignore` so uploaded files are
+- [X] **T003** [P] Add `ContosoDashboard/AppData/` to `.gitignore` so uploaded files are
   never committed. (R1)
-- [ ] **T004** [P] Delete the local development database file so the schema is recreated
+- [X] **T004** [P] Delete the local development database file so the schema is recreated
   with the new tables on the next run. (quickstart.md, `EnsureCreated()`)
 
 ## Phase 2: Foundational (T005 - T015)
 
 *Blocks every user story. No user-visible behavior yet.*
 
-- [ ] **T005** [P] Create `ContosoDashboard/Models/Document.cs` with the fields, lengths,
+- [X] **T005** [P] Create `ContosoDashboard/Models/Document.cs` with the fields, lengths,
   and annotations from data-model.md, plus the static `DocumentCategories.All` list.
   (FR-004, FR-006, R6)
-- [ ] **T006** [P] Create `ContosoDashboard/Models/DocumentShare.cs`. (FR-020)
-- [ ] **T007** [P] Create `ContosoDashboard/Models/DocumentActivity.cs` with the action
+- [X] **T006** [P] Create `ContosoDashboard/Models/DocumentShare.cs`. (FR-020)
+- [X] **T007** [P] Create `ContosoDashboard/Models/DocumentActivity.cs` with the action
   constants. (FR-033)
-- [ ] **T008** Add `Documents`, `DocumentShares`, and `DocumentActivities` DbSets to
+- [X] **T008** Add `Documents`, `DocumentShares`, and `DocumentActivities` DbSets to
   `ContosoDashboard/Data/ApplicationDbContext.cs`. (data-model.md)
-- [ ] **T009** Configure relationships and delete behavior in `OnModelCreating`: restrict on
+- [X] **T009** Configure relationships and delete behavior in `OnModelCreating`: restrict on
   user relationships, cascade from document to shares and activities, set null on project
   deletion. (FR-027, FR-028)
-- [ ] **T010** Add indexes on `UploadedByUserId`, `ProjectId`, `UploadedDate`, `Category`,
+- [X] **T010** Add indexes on `UploadedByUserId`, `ProjectId`, `UploadedDate`, `Category`,
   the unique index on `FilePath`, and the unique composite on
   (`DocumentId`, `SharedWithUserId`). (FR-022, NFR-002, R7)
-- [ ] **T011** [P] Create `ContosoDashboard/Services/IFileStorageService.cs` exactly as in
+- [X] **T011** [P] Create `ContosoDashboard/Services/IFileStorageService.cs` exactly as in
   contracts/file-storage-service.md. (NFR-006)
-- [ ] **T012** Create `ContosoDashboard/Services/LocalFileStorageService.cs`: path building,
+- [X] **T012** Create `ContosoDashboard/Services/LocalFileStorageService.cs`: path building,
   root resolution from configuration, directory creation, `CreateNew` writes, idempotent
   delete, traversal guard. (FR-010, R1)
-- [ ] **T013** Register `IFileStorageService` and controllers in
+- [X] **T013** Register `IFileStorageService` and controllers in
   `ContosoDashboard/Program.cs`, and raise the Blazor SignalR message size so a 25 MB file
   can be received. (FR-003, R3, R4)
-- [ ] **T014** Add the `Department` claim to the sign-in claims in
+- [X] **T014** Add the `Department` claim to the sign-in claims in
   `ContosoDashboard/Pages/Login.cshtml.cs`. (Constitution security requirements)
-- [ ] **T015** [P] Add the Documents entry to `ContosoDashboard/Shared/NavMenu.razor`.
+- [X] **T015** [P] Add the Documents entry to `ContosoDashboard/Shared/NavMenu.razor`.
   (FR-001)
 
 ## Phase 3: User Story 1 — Upload a work document (P1) (T016 - T026)
 
 **Goal**: An employee can upload a validated document with metadata and see it stored.
 
-- [ ] **T016** Create `ContosoDashboard/Services/DocumentService.cs` with `IDocumentService`
+- [X] **T016** Create `ContosoDashboard/Services/DocumentService.cs` with `IDocumentService`
   and the types from contracts/document-service.md. (Contract)
-- [ ] **T017** Implement validation in `DocumentService`: required title and category,
+- [X] **T017** Implement validation in `DocumentService`: required title and category,
   category membership, size limit, extension allow list. (FR-002, FR-003, FR-004)
-- [ ] **T018** Implement content-type and file-signature checks as one replaceable method.
+- [X] **T018** Implement content-type and file-signature checks as one replaceable method.
   (FR-011, FR-011a, R5)
-- [ ] **T019** Implement project authorization for uploads using `ProjectMember` and
+- [X] **T019** Implement project authorization for uploads using `ProjectMember` and
   `Project.ProjectManagerId`. (FR-008)
-- [ ] **T020** Implement `UploadAsync`: build path, write file, insert row, and delete the
+- [X] **T020** Implement `UploadAsync`: build path, write file, insert row, and delete the
   written file if the insert fails. (FR-009, FR-011c)
-- [ ] **T021** Write the `Upload` activity row inside `UploadAsync`. (FR-033)
-- [ ] **T022** Notify the other members of the project when a document is uploaded to it,
+- [X] **T021** Write the `Upload` activity row inside `UploadAsync`. (FR-033)
+- [X] **T022** Notify the other members of the project when a document is uploaded to it,
   reusing `INotificationService`. (FR-031, R8)
-- [ ] **T023** Register `IDocumentService` in `ContosoDashboard/Program.cs`.
-- [ ] **T024** Create `ContosoDashboard/Pages/Documents.razor` with the upload form: file
+- [X] **T023** Register `IDocumentService` in `ContosoDashboard/Program.cs`.
+- [X] **T024** Create `ContosoDashboard/Pages/Documents.razor` with the upload form: file
   picker, title, description, category, tags, project, and submit. (FR-001, FR-004, FR-005)
-- [ ] **T025** Implement the Blazor upload pattern in `Documents.razor`: read metadata
+- [X] **T025** Implement the Blazor upload pattern in `Documents.razor`: read metadata
   before opening the stream, copy to `MemoryStream`, clear the selection, re-key the input,
   show progress and the result message. (FR-007, R3)
-- [ ] **T026** Limit the project dropdown to projects the user manages or belongs to.
+- [X] **T026** Limit the project dropdown to projects the user manages or belongs to.
   (FR-008)
 
 **Checkpoint**: acceptance scenarios 1, 3, 4, and 5 of user story 1 pass.
@@ -103,32 +103,35 @@ Each increment leaves the application in a working, committable state.
 
 **Goal**: An employee can list, sort, filter, search, download, and preview documents.
 
-- [ ] **T027** Implement the access-scoped base query in `DocumentService` (uploader,
+- [X] **T027** Implement the access-scoped base query in `DocumentService` (uploader,
   project membership, share, administrator). (FR-018)
-- [ ] **T028** Implement `GetMyDocumentsAsync` with sorting, filtering, and paging in the
+- [X] **T028** Implement `GetMyDocumentsAsync` with sorting, filtering, and paging in the
   database. (FR-012, FR-013, FR-014, NFR-002)
-- [ ] **T029** Implement `SearchAsync` over title, description, tags, uploader name, and
+- [X] **T029** Implement `SearchAsync` over title, description, tags, uploader name, and
   project name, composed onto the access-scoped query. (FR-015, NFR-003)
-- [ ] **T030** Implement `GetDocumentAsync` returning `null` when the document is missing or
+- [X] **T030** Implement `GetDocumentAsync` returning `null` when the document is missing or
   not permitted. (FR-018)
-- [ ] **T031** Implement `OpenForDownloadAsync`, including the missing-file case and the
+- [X] **T031** Implement `OpenForDownloadAsync`, including the missing-file case and the
   `Download` activity row. (FR-016, FR-033)
-- [ ] **T032** Create `ContosoDashboard/Controllers/DocumentsController.cs` with the
+- [X] **T032** Create `ContosoDashboard/Controllers/DocumentsController.cs` with the
   authorized download endpoint and a sanitized `Content-Disposition` file name. (FR-016,
   FR-011b, R4)
-- [ ] **T033** Add the preview endpoint, inline for PDF, JPEG, and PNG only. (FR-017)
-- [ ] **T034** Add the document table to `Documents.razor`: title, category, project, size,
+- [X] **T033** Add the preview endpoint, inline for PDF, JPEG, and PNG only. (FR-017)
+- [X] **T034** Add the document table to `Documents.razor`: title, category, project, size,
   type, upload date, and row actions. (FR-012)
-- [ ] **T035** Add sort controls to `Documents.razor`. (FR-013)
-- [ ] **T036** Add category, project, and date-range filters plus the search box to
+- [X] **T035** Add sort controls to `Documents.razor`. (FR-013)
+- [X] **T036** Add category, project, and date-range filters plus the search box to
   `Documents.razor`. (FR-014, FR-015)
-- [ ] **T037** Add paging controls and an empty state to `Documents.razor`. (NFR-002)
-- [ ] **T038** Add the "Recent Documents" widget and the document count card to
+- [X] **T037** Add paging controls and an empty state to `Documents.razor`. (NFR-002)
+- [X] **T038** Add the "Recent Documents" widget and the document count card to
   `ContosoDashboard/Pages/Index.razor`, backed by `GetRecentDocumentsAsync` and
   `GetDocumentCountAsync`. (FR-029, FR-030)
 
 **Checkpoint — MVP complete**: all acceptance scenarios of user stories 1 and 2 pass.
-Test manually, then commit.
+Verified on 2026-09-18 by uploading a PDF as Ni Kang, listing, filtering, searching,
+downloading, and previewing it, and by confirming that an oversized file, an unsupported
+extension, a renamed executable, and a request for another user's document are all
+refused.
 
 ## Phase 5: User Story 3 — Share documents with colleagues (P2) (T039 - T046)
 

@@ -5,6 +5,7 @@
 @attribute [Authorize]
 @inject IDashboardService DashboardService
 @inject INotificationService NotificationService
+@inject IDocumentService DocumentService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Dashboard - ContosoDashboard</PageTitle>
@@ -20,7 +21,7 @@
     @if (summary != null)
     {
         <div class="row mb-4">
-            <div class="col-md-3 mb-3">
+            <div class="col-6 col-md-4 col-xl-2 mb-3">
                 <div class="card summary-card">
                     <div class="card-body">
                         <h5 class="card-title">Active Tasks</h5>
@@ -28,7 +29,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-6 col-md-4 col-xl-2 mb-3">
                 <div class="card summary-card">
                     <div class="card-body">
                         <h5 class="card-title">Due Today</h5>
@@ -36,7 +37,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-6 col-md-4 col-xl-2 mb-3">
                 <div class="card summary-card">
                     <div class="card-body">
                         <h5 class="card-title">Active Projects</h5>
@@ -44,11 +45,19 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-6 col-md-4 col-xl-2 mb-3">
                 <div class="card summary-card">
                     <div class="card-body">
                         <h5 class="card-title">Notifications</h5>
                         <p class="card-text display-4 text-danger">@summary.UnreadNotifications</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2 mb-3">
+                <div class="card summary-card">
+                    <div class="card-body">
+                        <h5 class="card-title">My Documents</h5>
+                        <p class="card-text display-4 text-success">@documentCount</p>
                     </div>
                 </div>
             </div>
@@ -96,6 +105,33 @@
         </div>
 
         <div class="col-md-6">
+            <h3>Recent Documents</h3>
+            @if (recentDocuments != null && recentDocuments.Any())
+            {
+                <div class="list-group mb-4">
+                    @foreach (var document in recentDocuments)
+                    {
+                        <a class="list-group-item list-group-item-action" href="/documents">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">@document.Title</h6>
+                                <small>@GetRelativeTime(document.UploadedDate)</small>
+                            </div>
+                            <small class="text-muted">
+                                @document.Category · @document.FileSizeDisplay
+                                @if (document.Project != null)
+                                {
+                                    <text> · @document.Project.Name</text>
+                                }
+                            </small>
+                        </a>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-muted mb-4">No documents uploaded yet. <a href="/documents">Upload one</a>.</p>
+            }
+
             <h3>Recent Notifications</h3>
             @if (recentNotifications != null && recentNotifications.Any())
             {
@@ -124,6 +160,8 @@
     private DashboardSummary? summary;
     private List<Announcement>? announcements;
     private List<Notification>? recentNotifications;
+    private List<Document>? recentDocuments;
+    private int documentCount;
     private string userName = "User";
     private int currentUserId = 0;
 
@@ -146,6 +184,8 @@
             summary = await DashboardService.GetDashboardSummaryAsync(currentUserId);
             announcements = await DashboardService.GetActiveAnnouncementsAsync();
             recentNotifications = await NotificationService.GetUserNotificationsAsync(currentUserId);
+            recentDocuments = await DocumentService.GetRecentDocumentsAsync(currentUserId, 5);
+            documentCount = await DocumentService.GetDocumentCountAsync(currentUserId);
         }
     }
 
