@@ -8,8 +8,8 @@ public class DocumentAccessTests : IAsyncLifetime
 {
     private readonly DocumentTestContext _context = new();
 
-    private int _personalDocumentId;
-    private int _projectDocumentId;
+    private int _personalId;
+    private int _projectId;
 
     public async Task InitializeAsync()
     {
@@ -19,14 +19,12 @@ public class DocumentAccessTests : IAsyncLifetime
 
         var project = await _context.Documents.UploadAsync(
             DocumentTestContext.PdfRequest(
-                title: "Design notes",
-                category: DocumentCategories.ProjectDocuments,
-                fileName: "design.pdf",
-                projectId: SeededUsers.SampleProjectId),
+                title: "Design notes", category: DocumentCategories.ProjectDocuments,
+                fileName: "design.pdf", projectId: SeededUsers.SampleProjectId),
             SeededUsers.NiKangEmployee);
 
-        _personalDocumentId = personal.Document!.DocumentId;
-        _projectDocumentId = project.Document!.DocumentId;
+        _personalId = personal.Document!.DocumentId;
+        _projectId = project.Document!.DocumentId;
     }
 
     public Task DisposeAsync()
@@ -35,29 +33,25 @@ public class DocumentAccessTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
-    [Fact]
-    public async Task GetDocumentAsync_AllowsTheUploader()
+    [Theory]
+    [InlineData(SeededUsers.NiKangEmployee, true)]       // uploader
+    [InlineData(SeededUsers.Administrator, true)]        // administrator
+    [InlineData(SeededUsers.CamilleProjectManager, false)] // no relationship to a personal document
+    [InlineData(SeededUsers.FlorisTeamLead, false)]
+    public async Task GetDocumentAsync_AppliesTheAccessRulesToAPersonalDocument(int userId, bool allowed)
     {
-        Assert.NotNull(await _context.Documents.GetDocumentAsync(_personalDocumentId, SeededUsers.NiKangEmployee));
+        var document = await _context.Documents.GetDocumentAsync(_personalId, userId);
+
+        Assert.Equal(allowed, document != null);
+        Assert.Equal(allowed, await _context.Documents.OpenForDownloadAsync(_personalId, userId) != null);
     }
 
-    [Fact]
-    public async Task GetDocumentAsync_AllowsProjectMembersForProjectDocuments()
+    [Theory]
+    [InlineData(SeededUsers.CamilleProjectManager)] // project manager
+    [InlineData(SeededUsers.FlorisTeamLead)]        // project member
+    public async Task GetDocumentAsync_AllowsTheProjectTeamForAProjectDocument(int userId)
     {
-        Assert.NotNull(await _context.Documents.GetDocumentAsync(_projectDocumentId, SeededUsers.CamilleProjectManager));
-        Assert.NotNull(await _context.Documents.GetDocumentAsync(_projectDocumentId, SeededUsers.FlorisTeamLead));
-    }
-
-    [Fact]
-    public async Task GetDocumentAsync_RefusesUsersWithNoRelationshipToTheDocument()
-    {
-        Assert.Null(await _context.Documents.GetDocumentAsync(_personalDocumentId, SeededUsers.CamilleProjectManager));
-    }
-
-    [Fact]
-    public async Task GetDocumentAsync_AllowsAdministrators()
-    {
-        Assert.NotNull(await _context.Documents.GetDocumentAsync(_personalDocumentId, SeededUsers.Administrator));
+        Assert.NotNull(await _context.Documents.GetDocumentAsync(_projectId, userId));
     }
 
     [Fact]
@@ -65,19 +59,26 @@ public class DocumentAccessTests : IAsyncLifetime
     {
         _context.Db.DocumentShares.Add(new DocumentShare
         {
-            DocumentId = _personalDocumentId,
+            DocumentId = _personalId,
             SharedWithUserId = SeededUsers.FlorisTeamLead,
             SharedByUserId = SeededUsers.NiKangEmployee
         });
         await _context.Db.SaveChangesAsync();
 
-        Assert.NotNull(await _context.Documents.GetDocumentAsync(_personalDocumentId, SeededUsers.FlorisTeamLead));
+        Assert.NotNull(await _context.Documents.GetDocumentAsync(_personalId, SeededUsers.FlorisTeamLead));
     }
 
     [Fact]
-    public async Task OpenForDownloadAsync_ReturnsTheStoredBytesToTheUploader()
+    public async Task GetDocumentAsync_ReturnsNullForAnUnknownIdentifier()
     {
-        var file = await _context.Documents.OpenForDownloadAsync(_personalDocumentId, SeededUsers.NiKangEmployee);
+        Assert.Null(await _context.Documents.GetDocumentAsync(9999, SeededUsers.NiKangEmployee));
+        Assert.Null(await _context.Documents.OpenForDownloadAsync(9999, SeededUsers.NiKangEmployee));
+    }
+
+    [Fact]
+    public async Task OpenForDownloadAsync_ReturnsTheStoredBytesAndRecordsTheActivity()
+    {
+        var file = await _context.Documents.OpenForDownloadAsync(_personalId, SeededUsers.NiKangEmployee);
 
         Assert.NotNull(file);
         Assert.Equal("q3-report.pdf", file!.FileName);
@@ -86,29 +87,21 @@ public class DocumentAccessTests : IAsyncLifetime
         using var buffer = new MemoryStream();
         await file.Content.CopyToAsync(buffer);
         await file.Content.DisposeAsync();
-
         Assert.Equal(DocumentTestContext.PdfBytes(), buffer.ToArray());
-    }
-
-    [Fact]
-    public async Task OpenForDownloadAsync_RefusesAUserWithoutAccess()
-    {
-        Assert.Null(await _context.Documents.OpenForDownloadAsync(_personalDocumentId, SeededUsers.CamilleProjectManager));
-    }
-
-    [Fact]
-    public async Task OpenForDownloadAsync_ReturnsNullForAnUnknownDocument()
-    {
-        Assert.Null(await _context.Documents.OpenForDownloadAsync(9999, SeededUsers.NiKangEmployee));
-    }
-
-    [Fact]
-    public async Task OpenForDownloadAsync_RecordsDownloadActivity()
-    {
-        await _context.Documents.OpenForDownloadAsync(_personalDocumentId, SeededUsers.NiKangEmployee);
 
         Assert.True(await _context.Db.DocumentActivities.AnyAsync(a =>
-            a.DocumentId == _personalDocumentId && a.Action == DocumentActions.Download));
+            a.DocumentId == _personalId && a.Action == DocumentActions.Download));
+    }
+
+    [Theory]
+    [InlineData("q3 status")]
+    [InlineData("QUARTERLY")]
+    [InlineData("status")]
+    public async Task SearchAsync_MatchesTitleDescriptionAndTagsCaseInsensitively(string term)
+    {
+        var results = await _context.Documents.SearchAsync(SeededUsers.NiKangEmployee, new DocumentQuery(SearchTerm: term));
+
+        Assert.Contains(results.Items, d => d.DocumentId == _personalId);
     }
 
     [Fact]
@@ -122,34 +115,18 @@ public class DocumentAccessTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SearchAsync_MatchesTitleDescriptionAndTagsCaseInsensitively()
-    {
-        foreach (var term in new[] { "q3 status", "QUARTERLY", "status" })
-        {
-            var results = await _context.Documents.SearchAsync(
-                SeededUsers.NiKangEmployee, new DocumentQuery(SearchTerm: term));
-
-            Assert.Contains(results.Items, d => d.DocumentId == _personalDocumentId);
-        }
-    }
-
-    [Fact]
     public async Task GetMyDocumentsAsync_FiltersSortsAndPages()
     {
-        var byCategory = await _context.Documents.GetMyDocumentsAsync(
-            SeededUsers.NiKangEmployee, new DocumentQuery(Category: DocumentCategories.Reports));
-        Assert.Single(byCategory.Items);
+        var byCategory = await Query(new DocumentQuery(Category: DocumentCategories.Reports));
+        Assert.Equal(_personalId, Assert.Single(byCategory.Items).DocumentId);
 
-        var byProject = await _context.Documents.GetMyDocumentsAsync(
-            SeededUsers.NiKangEmployee, new DocumentQuery(ProjectId: SeededUsers.SampleProjectId));
-        Assert.Equal(_projectDocumentId, Assert.Single(byProject.Items).DocumentId);
+        var byProject = await Query(new DocumentQuery(ProjectId: SeededUsers.SampleProjectId));
+        Assert.Equal(_projectId, Assert.Single(byProject.Items).DocumentId);
 
-        var byTitle = await _context.Documents.GetMyDocumentsAsync(
-            SeededUsers.NiKangEmployee, new DocumentQuery(SortBy: "Title", SortDescending: false));
+        var byTitle = await Query(new DocumentQuery(SortBy: "Title", SortDescending: false));
         Assert.Equal("Design notes", byTitle.Items[0].Title);
 
-        var firstPage = await _context.Documents.GetMyDocumentsAsync(
-            SeededUsers.NiKangEmployee, new DocumentQuery(PageSize: 1));
+        var firstPage = await Query(new DocumentQuery(PageSize: 1));
         Assert.Single(firstPage.Items);
         Assert.Equal(2, firstPage.TotalCount);
     }
@@ -159,8 +136,9 @@ public class DocumentAccessTests : IAsyncLifetime
     {
         Assert.Equal(2, await _context.Documents.GetDocumentCountAsync(SeededUsers.NiKangEmployee));
         Assert.Equal(0, await _context.Documents.GetDocumentCountAsync(SeededUsers.CamilleProjectManager));
-
-        var recent = await _context.Documents.GetRecentDocumentsAsync(SeededUsers.NiKangEmployee, 5);
-        Assert.Equal("Design notes", recent[0].Title);
+        Assert.Equal("Design notes", (await _context.Documents.GetRecentDocumentsAsync(SeededUsers.NiKangEmployee, 5))[0].Title);
     }
+
+    private Task<DocumentPage> Query(DocumentQuery query) =>
+        _context.Documents.GetMyDocumentsAsync(SeededUsers.NiKangEmployee, query);
 }

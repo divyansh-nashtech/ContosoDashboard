@@ -11,11 +11,9 @@ public class DocumentUploadValidationTests : IDisposable
     public void Dispose() => _context.Dispose();
 
     [Fact]
-    public async Task UploadAsync_StoresFileAndMetadata()
+    public async Task UploadAsync_StoresFileMetadataAndActivity()
     {
-        var result = await _context.Documents.UploadAsync(
-            DocumentTestContext.PdfRequest(description: "Quarterly status", tags: "q3, status"),
-            SeededUsers.NiKangEmployee);
+        var result = await Upload(DocumentTestContext.PdfRequest(description: "Quarterly status", tags: "q3, status"));
 
         Assert.True(result.Succeeded, result.Error);
         var document = result.Document!;
@@ -25,14 +23,14 @@ public class DocumentUploadValidationTests : IDisposable
         Assert.Equal("q3-report.pdf", document.FileName);
         Assert.Equal(SeededUsers.NiKangEmployee, document.UploadedByUserId);
         Assert.True(await _context.Storage.ExistsAsync(document.FilePath));
+        Assert.True(await _context.Db.DocumentActivities.AnyAsync(a =>
+            a.DocumentId == document.DocumentId && a.Action == DocumentActions.Upload));
     }
 
     [Fact]
-    public async Task UploadAsync_StoresFileUnderGuidNameOutsideUserControl()
+    public async Task UploadAsync_NeverBuildsThePathFromTheSuppliedFileName()
     {
-        var result = await _context.Documents.UploadAsync(
-            DocumentTestContext.PdfRequest(fileName: "../../etc/passwd.pdf"),
-            SeededUsers.NiKangEmployee);
+        var result = await Upload(DocumentTestContext.PdfRequest(fileName: "../../etc/passwd.pdf"));
 
         Assert.True(result.Succeeded, result.Error);
         Assert.StartsWith($"{SeededUsers.NiKangEmployee}/personal/", result.Document!.FilePath);
@@ -40,100 +38,59 @@ public class DocumentUploadValidationTests : IDisposable
         Assert.DoesNotContain("..", result.Document.FilePath);
     }
 
-    [Fact]
-    public async Task UploadAsync_RecordsUploadActivity()
-    {
-        var result = await _context.Documents.UploadAsync(
-            DocumentTestContext.PdfRequest(), SeededUsers.NiKangEmployee);
-
-        Assert.True(await _context.Db.DocumentActivities.AnyAsync(a =>
-            a.DocumentId == result.Document!.DocumentId &&
-            a.UserId == SeededUsers.NiKangEmployee &&
-            a.Action == DocumentActions.Upload));
-    }
-
-    [Fact]
-    public async Task UploadAsync_RejectsFileOverSizeLimit()
-    {
-        var result = await _context.Documents.UploadAsync(
-            DocumentTestContext.PdfRequest(size: DocumentLimits.MaxFileSizeBytes + 1),
-            SeededUsers.NiKangEmployee);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("25 MB", result.Error);
-        await AssertNothingPersisted();
-    }
-
-    [Fact]
-    public async Task UploadAsync_RejectsUnsupportedExtension()
-    {
-        var result = await _context.Documents.UploadAsync(
-            DocumentTestContext.PdfRequest(
-                fileName: "setup.exe", contentType: "application/octet-stream", content: new byte[64]),
-            SeededUsers.NiKangEmployee);
-
-        Assert.False(result.Succeeded);
-        await AssertNothingPersisted();
-    }
-
-    [Fact]
-    public async Task UploadAsync_RejectsContentTypeThatDoesNotMatchExtension()
-    {
-        var result = await _context.Documents.UploadAsync(
-            DocumentTestContext.PdfRequest(contentType: "image/png"),
-            SeededUsers.NiKangEmployee);
-
-        Assert.False(result.Succeeded);
-        await AssertNothingPersisted();
-    }
-
-    [Fact]
-    public async Task UploadAsync_RejectsExecutableRenamedAsPdf()
-    {
-        var result = await _context.Documents.UploadAsync(
-            DocumentTestContext.PdfRequest(content: new byte[] { 0x4D, 0x5A, 0x90, 0x00, 0x03 }),
-            SeededUsers.NiKangEmployee);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("do not match", result.Error);
-        await AssertNothingPersisted();
-    }
-
     [Theory]
-    [InlineData("", DocumentCategories.Reports)]
-    [InlineData("   ", DocumentCategories.Reports)]
-    [InlineData("Valid title", "")]
-    [InlineData("Valid title", "Not a real category")]
-    public async Task UploadAsync_RejectsMissingOrUnknownMetadata(string title, string category)
+    [InlineData("over the size limit")]
+    [InlineData("unsupported extension")]
+    [InlineData("content type mismatch")]
+    [InlineData("executable renamed as pdf")]
+    [InlineData("missing title")]
+    [InlineData("blank title")]
+    [InlineData("missing category")]
+    [InlineData("unknown category")]
+    [InlineData("project the user does not belong to")]
+    public async Task UploadAsync_RejectsAndPersistsNothing(string scenario)
     {
-        var result = await _context.Documents.UploadAsync(
-            DocumentTestContext.PdfRequest(title: title, category: category),
-            SeededUsers.NiKangEmployee);
+        var request = scenario switch
+        {
+            "over the size limit" => DocumentTestContext.PdfRequest(size: DocumentLimits.MaxFileSizeBytes + 1),
+            "unsupported extension" => DocumentTestContext.PdfRequest(
+                fileName: "setup.exe", contentType: "application/octet-stream", content: new byte[64]),
+            "content type mismatch" => DocumentTestContext.PdfRequest(contentType: "image/png"),
+            "executable renamed as pdf" => DocumentTestContext.PdfRequest(
+                content: new byte[] { 0x4D, 0x5A, 0x90, 0x00, 0x03 }),
+            "missing title" => DocumentTestContext.PdfRequest(title: ""),
+            "blank title" => DocumentTestContext.PdfRequest(title: "   "),
+            "missing category" => DocumentTestContext.PdfRequest(category: ""),
+            "unknown category" => DocumentTestContext.PdfRequest(category: "Not a real category"),
+            _ => DocumentTestContext.PdfRequest(projectId: SeededUsers.SampleProjectId)
+        };
+
+        // The unauthorized-project case is the only one that needs a different user.
+        var userId = scenario.StartsWith("project") ? SeededUsers.Administrator : SeededUsers.NiKangEmployee;
+        var result = await _context.Documents.UploadAsync(request, userId);
 
         Assert.False(result.Succeeded);
-        await AssertNothingPersisted();
+        Assert.NotNull(result.Error);
+        Assert.Equal(0, await _context.Db.Documents.CountAsync());
+        Assert.Equal(0, _context.StoredFileCount(userId));
     }
 
     [Fact]
-    public async Task UploadAsync_RejectsProjectTheUserDoesNotBelongTo()
+    public async Task UploadAsync_ReportsTheLimitAndTheSignatureFailureToTheUser()
     {
-        var result = await _context.Documents.UploadAsync(
-            DocumentTestContext.PdfRequest(projectId: SeededUsers.SampleProjectId),
-            SeededUsers.Administrator);
+        var tooBig = await Upload(DocumentTestContext.PdfRequest(size: DocumentLimits.MaxFileSizeBytes + 1));
+        var spoofed = await Upload(DocumentTestContext.PdfRequest(content: new byte[] { 0x4D, 0x5A, 0x90, 0x00 }));
 
-        Assert.False(result.Succeeded);
-        await AssertNothingPersisted();
+        Assert.Contains("25 MB", tooBig.Error);
+        Assert.Contains("do not match", spoofed.Error);
     }
 
     [Fact]
-    public async Task UploadAsync_AllowsProjectMemberAndNotifiesTheOtherMembers()
+    public async Task UploadAsync_AllowsProjectMembersAndNotifiesTheOtherMembers()
     {
-        var result = await _context.Documents.UploadAsync(
-            DocumentTestContext.PdfRequest(
-                title: "Design notes",
-                category: DocumentCategories.ProjectDocuments,
-                projectId: SeededUsers.SampleProjectId),
-            SeededUsers.NiKangEmployee);
+        var result = await Upload(DocumentTestContext.PdfRequest(
+            title: "Design notes", category: DocumentCategories.ProjectDocuments,
+            projectId: SeededUsers.SampleProjectId));
 
         Assert.True(result.Succeeded, result.Error);
 
@@ -153,8 +110,7 @@ public class DocumentUploadValidationTests : IDisposable
         var storage = new RecordingFileStorageService(_context.Storage);
         var service = _context.CreateServiceWithUnusableDatabase(storage);
 
-        var result = await service.UploadAsync(
-            DocumentTestContext.PdfRequest(), SeededUsers.NiKangEmployee);
+        var result = await service.UploadAsync(DocumentTestContext.PdfRequest(), SeededUsers.NiKangEmployee);
 
         Assert.False(result.Succeeded);
         Assert.NotNull(storage.LastWrittenPath);
@@ -162,35 +118,28 @@ public class DocumentUploadValidationTests : IDisposable
         Assert.Equal(0, await _context.Db.Documents.CountAsync());
     }
 
-    private async Task AssertNothingPersisted()
+    private Task<DocumentResult> Upload(DocumentUploadRequest request) =>
+        _context.Documents.UploadAsync(request, SeededUsers.NiKangEmployee);
+
+    private sealed class RecordingFileStorageService(IFileStorageService inner) : IFileStorageService
     {
-        Assert.Equal(0, await _context.Db.Documents.CountAsync());
-        Assert.Equal(0, _context.StoredFileCount(SeededUsers.NiKangEmployee));
-    }
-
-    private sealed class RecordingFileStorageService : IFileStorageService
-    {
-        private readonly IFileStorageService _inner;
-
-        public RecordingFileStorageService(IFileStorageService inner) => _inner = inner;
-
         public string? LastWrittenPath { get; private set; }
 
         public string BuildPath(int userId, int? projectId, string originalFileName) =>
-            _inner.BuildPath(userId, projectId, originalFileName);
+            inner.BuildPath(userId, projectId, originalFileName);
 
-        public async Task<string> UploadAsync(Stream content, string path, string contentType)
+        public Task<string> UploadAsync(Stream content, string path, string contentType)
         {
             LastWrittenPath = path;
-            return await _inner.UploadAsync(content, path, contentType);
+            return inner.UploadAsync(content, path, contentType);
         }
 
-        public Task<Stream?> DownloadAsync(string path) => _inner.DownloadAsync(path);
+        public Task<Stream?> DownloadAsync(string path) => inner.DownloadAsync(path);
 
-        public Task DeleteAsync(string path) => _inner.DeleteAsync(path);
+        public Task DeleteAsync(string path) => inner.DeleteAsync(path);
 
-        public Task<string> GetUrlAsync(string path, TimeSpan expiration) => _inner.GetUrlAsync(path, expiration);
+        public Task<string> GetUrlAsync(string path, TimeSpan expiration) => inner.GetUrlAsync(path, expiration);
 
-        public Task<bool> ExistsAsync(string path) => _inner.ExistsAsync(path);
+        public Task<bool> ExistsAsync(string path) => inner.ExistsAsync(path);
     }
 }
