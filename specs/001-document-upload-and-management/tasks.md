@@ -37,8 +37,8 @@ Each increment leaves the application in a working, committable state.
   `ContosoDashboard/appsettings.json`. (R1, NFR-006)
 - [ ] **T003** [P] Add `ContosoDashboard/AppData/` to `.gitignore` so uploaded files are
   never committed. (R1)
-- [ ] **T004** [P] Create the `tests/ContosoDashboard.Tests` xUnit project referencing the
-  web project, and add it to the solution build. (Quality requirements)
+- [ ] **T004** [P] Delete the local development database file so the schema is recreated
+  with the new tables on the next run. (quickstart.md, `EnsureCreated()`)
 
 ## Phase 2: Foundational (T005 - T015)
 
@@ -175,7 +175,8 @@ Test manually, then commit.
 - [ ] **T059** Show documents related to a task and allow upload from the task detail view,
   associating the document with the task's project. (FR-032)
 - [ ] **T060** Add an administrator view of all documents and recorded activity. (FR-034)
-- [ ] **T061** [P] Unit tests for upload validation: size, extension, content type,
+- [ ] **T061** Create the `tests/ContosoDashboard.Tests` xUnit project referencing the web
+  project, then add unit tests for upload validation: size, extension, content type,
   signature, missing metadata. (FR-002, FR-003, FR-004, FR-011)
 - [ ] **T062** [P] Unit tests for the access rules, including refusal by identifier.
   (FR-018)
@@ -210,5 +211,5 @@ Phases 5 and 6 depend only on the MVP and can proceed in either order.
 ## Parallel opportunities
 
 - T005, T006, T007 — three independent model files.
-- T003, T004 — unrelated setup files.
+- T003, T004 — unrelated setup steps.
 - T061 through T064 — independent test files, once the services they cover exist.
