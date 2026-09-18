@@ -84,8 +84,8 @@ from disk. Delivers value on its own: a centralized, attributed store of work do
 ### User Story 2 - Find and open documents (Priority: P1)
 
 An employee needs a file they uploaded last month. They open Documents, filter by category
-or project, sort by upload date, or type part of the title into search, and download or
-preview the document from the result list.
+or project, sort by upload date, or type part of the title into search, and download
+the document from the result list.
 
 **Why this priority**: A centralized store that cannot be searched is no better than a
 shared drive. Retrieval is what shortens "time to locate a document", the main business
@@ -269,7 +269,8 @@ and confirm both the record and the stored file are gone.
 - **FR-016**: Users MUST be able to download any document they are permitted to access, and
   the download MUST return the original file name and content type.
 - **FR-017**: System MUST allow PDF and image documents to be previewed in the browser
-  without downloading.
+  without downloading. *(Deferred: not part of the MVP increment; documents are opened by
+  download until this is delivered.)*
 - **FR-018**: System MUST grant access to a document only to its uploader, the members and
   manager of its associated project, users it has been shared with, and administrators, and
   MUST verify this on every retrieval including direct requests by identifier.
@@ -333,7 +334,8 @@ and confirm both the record and the stored file are gone.
   office network.
 - **NFR-002**: A document list MUST render within 2 seconds for up to 500 documents.
 - **NFR-003**: Search MUST return results within 2 seconds.
-- **NFR-004**: A document preview MUST load within 3 seconds.
+- **NFR-004**: A document preview MUST load within 3 seconds. *(Applies once FR-017 is
+  delivered.)*
 - **NFR-005**: The feature MUST work with no internet connection and no cloud service.
 - **NFR-006**: Storage MUST be reachable only through an interface with upload, download,
   delete, and URL operations, so that a cloud implementation can replace the local one

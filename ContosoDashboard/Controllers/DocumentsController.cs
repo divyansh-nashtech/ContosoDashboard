@@ -9,13 +9,6 @@ namespace ContosoDashboard.Controllers;
 [Route("api/documents")]
 public class DocumentsController : Controller
 {
-    private static readonly string[] PreviewableContentTypes =
-    {
-        "application/pdf",
-        "image/jpeg",
-        "image/png"
-    };
-
     private readonly IDocumentService _documentService;
 
     public DocumentsController(IDocumentService documentService)
@@ -33,24 +26,6 @@ public class DocumentsController : Controller
         }
 
         return File(file.Content, file.ContentType, file.FileName);
-    }
-
-    [HttpGet("{id:int}/preview")]
-    public async Task<IActionResult> Preview(int id)
-    {
-        var file = await GetFileAsync(id);
-        if (file == null)
-        {
-            return NotFound();
-        }
-
-        if (!PreviewableContentTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase))
-        {
-            file.Content.Dispose();
-            return BadRequest("This document type cannot be previewed in the browser.");
-        }
-
-        return File(file.Content, file.ContentType);
     }
 
     private async Task<DocumentFile?> GetFileAsync(int documentId)

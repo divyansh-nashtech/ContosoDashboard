@@ -65,8 +65,7 @@ against an older database file, stop it, delete `ContosoDashboard/ContosoDashboa
    **Reports**, and submit. The progress indicator runs and the document appears in the
    list.
 4. Filter by category, sort by size, and search for part of the title.
-5. Select **Download** and confirm the original file is returned; select **Preview** on a
-   PDF or image and confirm it opens in the browser.
+5. Select **Download** and confirm the original file is returned.
 6. Select **Share**, choose **Floris Kregel**, and confirm. Sign out, sign in as Floris,
    and check the notification and the **Shared with Me** tab.
 7. Sign back in as Ni Kang, upload a document to the project **ContosoDashboard
@@ -88,8 +87,14 @@ against an older database file, stop it, delete `ContosoDashboard/ContosoDashboa
 ## Run the tests
 
 ```bash
-dotnet test
+dotnet test tests/ContosoDashboard.Tests
 ```
 
-The test project covers validation and authorization rules in `DocumentService` and the
-path and round-trip behavior of `LocalFileStorageService`.
+35 tests run against a temporary SQLite database and a temporary
+storage root, so they leave nothing behind:
+
+| File | Covers |
+|------|--------|
+| `DocumentUploadValidationTests.cs` | Size limit, extension allow list, content type, file signature, required metadata, project authorization, notifications, and the compensating delete when the database write fails |
+| `DocumentAccessTests.cs` | Uploader, project member, share recipient, administrator and outsider access; download round trip; activity records; search scoping; filter, sort and paging |
+| `LocalFileStorageServiceTests.cs` | GUID path construction, round trip, idempotent delete, and refusal to read or write outside the storage root |

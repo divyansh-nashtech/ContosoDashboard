@@ -80,15 +80,13 @@ can stream directly to the blob client without changing the service surface.
 
 ## R4 — Serving files that live outside `wwwroot`
 
-**Question**: How does a user download or preview a file that static file middleware cannot
-serve?
+**Question**: How does a user download a file that static file middleware cannot serve?
 
-**Decision**: Add `DocumentsController` with `GET /api/documents/{id}/download` and
-`GET /api/documents/{id}/preview`. Both resolve the current user from claims, ask
-`IDocumentService` whether that user may read the document, then stream the file with its
-stored content type. Download sets a `Content-Disposition` attachment header with a
-sanitized file name; preview sets an inline header and is refused for types other than PDF,
-JPEG, and PNG.
+**Decision**: Add `DocumentsController` with `GET /api/documents/{id}/download`. It resolves
+the current user from claims, asks `IDocumentService` whether that user may read the
+document, then streams the file with its stored content type and a `Content-Disposition`
+attachment header carrying a sanitized file name. In-browser preview (FR-017) reuses the
+same endpoint shape with an inline header and is deferred to a later increment.
 
 **Rationale**: An MVC controller is the only place in this application that can return a
 file response with headers; Blazor components render markup. Re-checking authorization in

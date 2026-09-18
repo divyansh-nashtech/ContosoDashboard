@@ -26,7 +26,7 @@ in the running application
 **Target Platform**: ASP.NET Core server application, modern desktop browsers  
 **Project Type**: Single web application (`ContosoDashboard/`)  
 **Performance Goals**: Document list within 2 s at 500 documents; search within 2 s; upload
-of 25 MB within 30 s; preview within 3 s  
+of 25 MB within 30 s  
 **Constraints**: Offline capable, no cloud SDKs, no rewrite of existing subsystems, mock
 cookie authentication retained, development schema created by `EnsureCreated()`  
 **Scale/Scope**: Internal dashboard — hundreds of users, a few thousand documents, six new
@@ -84,7 +84,7 @@ ContosoDashboard/
 │   ├── DocumentService.cs              # new — validation, authorization, orchestration
 │   └── DashboardService.cs             # edit — document count and recent documents
 ├── Controllers/
-│   └── DocumentsController.cs          # new — authorized download and preview endpoint
+│   └── DocumentsController.cs          # new — authorized download endpoint
 ├── Pages/
 │   ├── Documents.razor                 # new — upload, list, filter, search, share
 │   ├── Index.razor                     # edit — Recent Documents widget, summary card

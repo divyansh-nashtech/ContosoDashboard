@@ -13,11 +13,11 @@
 
 ## Implementation Strategy
 
-**MVP first (Tasks: T001 - T038)** — Setup, Foundational, User Story 1 (upload), and User
-Story 2 (browse, search, download). Completing this range gives a demonstrable feature: an
-employee can upload a document and find, preview, and download it again, with every access
-authorized and audited. Stop here, test the acceptance scenarios of user stories 1 and 2,
-and commit before continuing.
+**MVP first (Tasks: T001 - T038, excluding the deferred T033)** — Setup, Foundational,
+User Story 1 (upload), and User Story 2 (browse, search, download). Completing this range
+gives a demonstrable feature: an employee can upload a document and find and download it
+again, with every access authorized and audited. Stop here, test the acceptance scenarios
+of user stories 1 and 2, and commit before continuing.
 
 **Increment 2 (Tasks: T039 - T052)** — User Story 3 (sharing) and User Story 4 (project
 documents), the collaboration half of the feature.
@@ -101,7 +101,7 @@ Each increment leaves the application in a working, committable state.
 
 ## Phase 4: User Story 2 — Find and open documents (P1) (T027 - T038)
 
-**Goal**: An employee can list, sort, filter, search, download, and preview documents.
+**Goal**: An employee can list, sort, filter, search, and download documents.
 
 - [X] **T027** Implement the access-scoped base query in `DocumentService` (uploader,
   project membership, share, administrator). (FR-018)
@@ -116,7 +116,8 @@ Each increment leaves the application in a working, committable state.
 - [X] **T032** Create `ContosoDashboard/Controllers/DocumentsController.cs` with the
   authorized download endpoint and a sanitized `Content-Disposition` file name. (FR-016,
   FR-011b, R4)
-- [X] **T033** Add the preview endpoint, inline for PDF, JPEG, and PNG only. (FR-017)
+- [ ] **T033** Add the preview endpoint, inline for PDF, JPEG, and PNG only. (FR-017)
+  *Deferred out of the MVP — documents are opened by download until this is delivered.*
 - [X] **T034** Add the document table to `Documents.razor`: title, category, project, size,
   type, upload date, and row actions. (FR-012)
 - [X] **T035** Add sort controls to `Documents.razor`. (FR-013)
@@ -128,10 +129,9 @@ Each increment leaves the application in a working, committable state.
   `GetDocumentCountAsync`. (FR-029, FR-030)
 
 **Checkpoint — MVP complete**: all acceptance scenarios of user stories 1 and 2 pass.
-Verified on 2026-09-18 by uploading a PDF as Ni Kang, listing, filtering, searching,
-downloading, and previewing it, and by confirming that an oversized file, an unsupported
-extension, a renamed executable, and a request for another user's document are all
-refused.
+Verified on 2026-09-18 by uploading a PDF as Ni Kang, listing, filtering, searching, and
+downloading it, and by confirming that an oversized file, an unsupported extension, a
+renamed executable, and a request for another user's document are all refused.
 
 ## Phase 5: User Story 3 — Share documents with colleagues (P2) (T039 - T046)
 
@@ -175,17 +175,21 @@ refused.
 
 ## Phase 8: Integration, tests, and documentation (T059 - T066)
 
+Tests were brought forward from this phase and delivered with the MVP: 35 xUnit tests in
+`tests/ContosoDashboard.Tests` covering upload validation, access rules, the compensating
+delete, and local storage. Run them with `dotnet test tests/ContosoDashboard.Tests`.
+
 - [ ] **T059** Show documents related to a task and allow upload from the task detail view,
   associating the document with the task's project. (FR-032)
 - [ ] **T060** Add an administrator view of all documents and recorded activity. (FR-034)
-- [ ] **T061** Create the `tests/ContosoDashboard.Tests` xUnit project referencing the web
+- [X] **T061** Create the `tests/ContosoDashboard.Tests` xUnit project referencing the web
   project, then add unit tests for upload validation: size, extension, content type,
   signature, missing metadata. (FR-002, FR-003, FR-004, FR-011)
-- [ ] **T062** [P] Unit tests for the access rules, including refusal by identifier.
+- [X] **T062** [P] Unit tests for the access rules, including refusal by identifier.
   (FR-018)
-- [ ] **T063** [P] Unit tests for the compensating delete when the database write fails.
+- [X] **T063** [P] Unit tests for the compensating delete when the database write fails.
   (FR-009)
-- [ ] **T064** [P] Unit tests for `LocalFileStorageService` path building, round trip, and
+- [X] **T064** [P] Unit tests for `LocalFileStorageService` path building, round trip, and
   traversal refusal. (FR-010)
 - [ ] **T065** Verify the performance budgets with 500 seeded documents. (NFR-002, NFR-003)
 - [ ] **T066** Update `README.md` with the feature, the storage layout, and the reset

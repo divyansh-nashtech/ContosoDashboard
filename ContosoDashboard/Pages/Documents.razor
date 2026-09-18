@@ -196,13 +196,6 @@
                                    href="/api/documents/@document.DocumentId/download">
                                     <i class="bi bi-download"></i>
                                 </a>
-                                @if (IsPreviewable(document.ContentType))
-                                {
-                                    <a class="btn btn-sm btn-outline-secondary"
-                                       href="/api/documents/@document.DocumentId/preview" target="_blank">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                }
                             </td>
                         </tr>
                     }
@@ -227,8 +220,6 @@
 
 @code {
     private const int PageSize = 25;
-    private static readonly string[] PreviewableTypes = { "application/pdf", "image/jpeg", "image/png" };
-
     private IReadOnlyList<Document>? documents;
     private List<Project> myProjects = new();
     private int totalCount;
@@ -428,7 +419,4 @@
             await LoadDocuments();
         }
     }
-
-    private static bool IsPreviewable(string contentType) =>
-        PreviewableTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase);
 }
